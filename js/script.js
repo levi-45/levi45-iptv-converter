@@ -4,6 +4,7 @@ const $=id=>document.getElementById(id);let channels=[],page=0;const PAGE=100;
 const PROJECT_KEY='levi45-iptv-project-v3';
 let restoring=false;
 let saveTimer=null;
+let previewTimer=null;
 function status(s){$('status').textContent=s}
 function safeName(s){return (s||'Levi45 IPTV').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').trim().slice(0,75)||'Levi45 IPTV'}
 function parseM3U(text){let result=[],meta=null,group='';for(const raw of text.replace(/^\uFEFF/,'').split(/\r\n|\r|\n/)){const line=raw.trim();if(!line)continue;if(/^#EXTINF\s*:/i.test(line)){let quote=false,comma=-1;for(let i=0;i<line.length;i++){if(line[i]==='"')quote=!quote;if(line[i]===','&&!quote){comma=i;break}}const attrs={};const head=comma>=0?line.slice(0,comma):line;for(const m of head.matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s]+))/g))attrs[m[1].toLowerCase()]=m[2]??m[3]??m[4];meta={name:comma>=0?line.slice(comma+1).trim():'',attrs};group=attrs['group-title']||'';continue}if(/^#EXTGRP\s*:/i.test(line)){group=line.split(':').slice(1).join(':').trim();continue}if(line.startsWith('#'))continue;if(!/^(https?|rtsp|rtmp|rtmps|udp|rtp|mms):\/\//i.test(line))continue;let attrs=meta?.attrs||{};let name=meta?.name||attrs['tvg-name']||`Channel ${result.length+1}`;result.push({id:result.length,name,group:attrs['group-title']||group||'Uncategorised',url:line,attrs:{...attrs},selected:true});meta=null;group=''}return result}
@@ -67,7 +68,6 @@ restoreAutosave();refresh();
 
 
 // v3.4: Preview is bounded to avoid freezing the page for very large playlists.
-let previewTimer;
 function selectedItems(){return channels.filter(c=>c.selected)}
 function queuePreview(){clearTimeout(previewTimer);previewTimer=setTimeout(renderPreview,180)}
 function renderPreview(){
