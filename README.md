@@ -1,17 +1,13 @@
-# Levi45 IPTV Converter v3.2
+# Levi45 IPTV Converter v3.3
 
-Static GitHub Pages IPTV playlist creator, editor, and Enigma2 bouquet exporter.
+Static GitHub Pages playlist editor and converter.
+
+## Classic Quick Converter
+
+A two-textbox conversion interface has been added beneath the channel library. Paste M3U text, select an output format, click Convert Playlist, inspect or edit the output, and download it. For Enigma2 choose Download Userbouquet (.tv). The Download M3U File button saves the displayed text with an .m3u extension and is intended for M3U output.
 
 ## Deploy
-Upload `index.html`, `css/style.css`, `js/script.js`, and `text.txt` preserving their paths. No backend or build step is needed.
 
-## v3.2 features
-- Autosave the workspace locally in your browser (localStorage, subject to browser storage limits).
-- Drag channel rows to reorder when search, category filtering and alphabetical sorting are disabled.
-- Download an editable JSON project backup and restore it later.
-- Existing M3U import/export, channel editor, and Enigma2 bouquet export.
+Copy `index.html`, `css/style.css`, and `js/script.js` to your existing repository in the same folders. The tool runs entirely in the browser.
 
-**Important:** Autosaved projects stay in the same browser/profile/device; private mode or clearing browser storage may erase them. Download a project backup for reliable long-term storage. For very large playlists, browser storage may fill up. Never share project backup files containing private stream URLs or credentials.
-
-## Note
-This project generates playlist files, not streams. Use only streams you are authorised to access.
+Existing channel editing, drag sorting, autosave, project backup and restore remain available.

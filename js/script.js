@@ -43,3 +43,21 @@ $('bouquet').addEventListener('input',scheduleSave);
 // Reset must also clear the persisted workspace; refresh() itself saves the empty state.
 
 restoreAutosave();refresh();
+
+// Classic two-textarea converter, independent of the channel library.
+(function(){
+ const input=$('quickInput'),output=$('quickOutput'),notice=$('quickStatus');
+ const format=()=>document.querySelector('input[name="quickFormat"]:checked').value;
+ function setNotice(t){notice.textContent=t}
+ $('quickConvert').addEventListener('click',()=>{
+   const raw=input.value.trim();if(!raw){setNotice('Paste an M3U playlist first.');return}
+   const items=parseM3U(raw);if(!items.length){setNotice('No supported stream URLs found.');return}
+   const mode=format(),name=safeName($('bouquet').value);
+   output.value=mode==='enigma'?bouquetContent(items,name):mode==='urls'?items.map(c=>c.url).join('\n')+'\n':m3u(items,mode==='extended');
+   setNotice(`Converted ${items.length.toLocaleString()} channels to ${mode==='enigma'?'Enigma2 userbouquet':mode==='urls'?'URL list':'M3U'} format.`);
+ });
+ $('quickClear').addEventListener('click',()=>{input.value='';output.value='';setNotice('Ready to convert your playlist.')});
+ $('quickCopy').addEventListener('click',async()=>{if(!output.value){setNotice('Convert a playlist first.');return}try{await navigator.clipboard.writeText(output.value);setNotice('Output copied.')}catch{output.focus();output.select();setNotice('Select the text and press Ctrl+C to copy.')}});
+ $('quickDownloadM3U').addEventListener('click',()=>{if(!output.value){setNotice('Convert a playlist first.');return}save(output.value,safeName($('bouquet').value)+'.m3u');setNotice('Downloaded current output as .m3u. For Enigma2 output, use Download Userbouquet instead.')});
+ $('quickDownloadBouquet').addEventListener('click',()=>{if(!output.value){setNotice('Convert a playlist first.');return}if(!output.value.trimStart().startsWith('#NAME')){setNotice('The current output is not an Enigma2 bouquet. Choose Enigma2 and convert first.');return}save(output.value,'userbouquet.'+safeName($('bouquet').value).toLowerCase().replace(/[^a-z0-9_-]/g,'_')+'.tv');setNotice('Downloaded Enigma2 userbouquet (.tv).')});
+})();
