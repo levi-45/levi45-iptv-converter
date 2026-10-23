@@ -11,3 +11,7 @@ A two-textbox conversion interface has been added beneath the channel library. P
 Copy `index.html`, `css/style.css`, and `js/script.js` to your existing repository in the same folders. The tool runs entirely in the browser.
 
 Existing channel editing, drag sorting, autosave, project backup and restore remain available.
+
+
+## v3.3.2 fix
+Initialises `restoring`, `saveTimer`, and `PROJECT_KEY` before autosave runs.
