@@ -12,3 +12,6 @@
 
 /* v3.4 selected-channel preview */
 .output-preview{margin-top:20px;margin-bottom:20px}.output-preview .row{flex-wrap:wrap;gap:10px;margin-bottom:14px}.preview-text{display:block;width:100%;min-height:230px;box-sizing:border-box;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55}.output-preview .hint{margin-top:10px}
+
+/* Compact community links replacing the hero text */
+.hero-links{padding:26px 0 24px;display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap}.hero-links a{display:inline-flex;align-items:center;justify-content:center;padding:11px 19px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-weight:650;text-decoration:none;transition:border-color .15s,transform .15s}.hero-links a:hover,.hero-links a:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
