@@ -1,212 +1,29 @@
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Get all elements
-    const convertBtn = document.getElementById('convertBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const downloadBouquetBtn = document.getElementById('downloadBouquetBtn');
-    const inputPlaylist = document.getElementById('inputPlaylist');
-    const outputPlaylist = document.getElementById('outputPlaylist');
-    const conversionInfo = document.getElementById('conversionInfo');
-    
-    // Add event listeners
-    convertBtn.addEventListener('click', convertPlaylist);
-    clearBtn.addEventListener('click', clearFields);
-    downloadBtn.addEventListener('click', downloadPlaylist);
-    downloadBouquetBtn.addEventListener('click', downloadBouquet);
-    
-    // Enable convert button when there's input
-    inputPlaylist.addEventListener('input', function() {
-        convertBtn.disabled = !this.value.trim();
-    });
-});
-
-function convertPlaylist() {
-    const input = document.getElementById('inputPlaylist').value.trim();
-    if (!input) {
-        alert('Please paste your M3U playlist first');
-        return;
-    }
-    
-    const conversionType = document.querySelector('input[name="conversion"]:checked').value;
-    let output = '';
-    let infoText = '';
-    
-    try {
-        if (conversionType === 'extract') {
-            // Extract only URLs
-            const lines = input.split('\n');
-            let urlCount = 0;
-            
-            for (const line of lines) {
-                if (line.startsWith('http')) {
-                    output += line + '\n';
-                    urlCount++;
-                }
-            }
-            infoText = `Extracted ${urlCount} URLs from the playlist.`;
-            
-        } else if (conversionType === 'simple') {
-            // Convert to simple M3U format
-            const lines = input.split('\n');
-            let channelName = '';
-            let channelCount = 0;
-            
-            output = '#EXTM3U\n';
-            
-            for (const line of lines) {
-                if (line.startsWith('#EXTINF')) {
-                    // Extract channel name
-                    const nameMatch = line.match(/,(.*)$/);
-                    if (nameMatch && nameMatch[1]) {
-                        channelName = nameMatch[1].trim();
-                    }
-                } else if (line.startsWith('http')) {
-                    output += `#EXTINF:-1,${channelName}\n${line}\n`;
-                    channelName = '';
-                    channelCount++;
-                }
-            }
-            infoText = `Converted ${channelCount} channels to simple M3U format.`;
-            
-        } else if (conversionType === 'extended') {
-            // Convert to extended M3U format (with more metadata)
-            const lines = input.split('\n');
-            let channelName = '';
-            let tvgId = '';
-            let tvgLogo = '';
-            let groupTitle = '';
-            let channelCount = 0;
-            
-            output = '#EXTM3U\n';
-            
-            for (const line of lines) {
-                if (line.startsWith('#EXTINF')) {
-                    // Parse existing EXTINF line
-                    channelName = line.split(',').pop().trim();
-                    
-                    // Extract additional attributes if they exist
-                    const attrMatch = line.match(/tvg-id="([^"]*)"/);
-                    tvgId = attrMatch ? attrMatch[1] : '';
-                    
-                    const logoMatch = line.match(/tvg-logo="([^"]*)"/);
-                    tvgLogo = logoMatch ? logoMatch[1] : '';
-                    
-                    const groupMatch = line.match(/group-title="([^"]*)"/);
-                    groupTitle = groupMatch ? groupMatch[1] : '';
-                    
-                } else if (line.startsWith('http')) {
-                    // Build new EXTINF line with all attributes
-                    let extinfLine = '#EXTINF:-1';
-                    if (tvgId) extinfLine += ` tvg-id="${tvgId}"`;
-                    if (tvgLogo) extinfLine += ` tvg-logo="${tvgLogo}"`;
-                    if (groupTitle) extinfLine += ` group-title="${groupTitle}"`;
-                    extinfLine += `,${channelName}`;
-                    
-                    output += `${extinfLine}\n${line}\n`;
-                    channelCount++;
-                    
-                    // Reset for next channel
-                    channelName = '';
-                    tvgId = '';
-                    tvgLogo = '';
-                    groupTitle = '';
-                }
-            }
-            infoText = `Converted ${channelCount} channels to extended M3U format with TVG metadata.`;
-            
-        } else if (conversionType === 'enigma2') {
-            // Convert to Enigma2 userbouquet format
-            const lines = input.split('\n');
-            let channelName = '';
-            let channelCount = 0;
-            
-            output = `#NAME Levi45 IPTV Playlist\n#SERVICE 1:64:0:0:0:0:0:0:0:0:\n#DESCRIPTION Levi45 IPTV Playlist\n`;
-            
-            for (const line of lines) {
-                if (line.startsWith('#EXTINF')) {
-                    // Extract channel name
-                    const nameMatch = line.match(/,(.*)$/);
-                    if (nameMatch && nameMatch[1]) {
-                        channelName = nameMatch[1].trim();
-                    }
-                } else if (line.startsWith('http')) {
-                    // Convert URL to Enigma2 service format
-                    const serviceType = line.includes('m3u8') ? '4097' : '1';
-                    const encodedUrl = encodeURI(line).replace(/:/g, '%3a');
-                    output += `#SERVICE ${serviceType}:0:1:0:0:0:0:0:0:0:${encodedUrl}:${channelName}\n`;
-                    output += `#DESCRIPTION ${channelName}\n`;
-                    channelCount++;
-                    
-                    channelName = '';
-                }
-            }
-            infoText = `Converted ${channelCount} channels to Enigma2 userbouquet format for Dreambox/VU+ receivers.`;
-        }
-        
-        // Update the output and UI
-        document.getElementById('outputPlaylist').value = output.trim();
-        document.getElementById('downloadBtn').disabled = !output.trim();
-        document.getElementById('downloadBouquetBtn').disabled = conversionType !== 'enigma2';
-        document.getElementById('conversionInfo').textContent = infoText;
-        
-    } catch (error) {
-        console.error('Conversion error:', error);
-        alert('Error converting playlist. Please check the format and try again.');
-        document.getElementById('conversionInfo').textContent = 'Error: Invalid playlist format';
-    }
-}
-
-function clearFields() {
-    document.getElementById('inputPlaylist').value = '';
-    document.getElementById('outputPlaylist').value = '';
-    document.getElementById('downloadBtn').disabled = true;
-    document.getElementById('downloadBouquetBtn').disabled = true;
-    document.getElementById('conversionInfo').textContent = '';
-    document.getElementById('convertBtn').disabled = true;
-}
-
-function downloadPlaylist() {
-    const content = document.getElementById('outputPlaylist').value;
-    if (!content) return;
-    
-    const conversionType = document.querySelector('input[name="conversion"]:checked').value;
-    let filename = 'levi45_converted_playlist.m3u';
-    
-    if (conversionType === 'extract') {
-        filename = 'levi45_extracted_urls.txt';
-    }
-    
-    const blob = new Blob([content], { type: 'application/x-mpegurl' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    
-    setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }, 100);
-}
-
-function downloadBouquet() {
-    const content = document.getElementById('outputPlaylist').value;
-    if (!content) return;
-    
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'userbouquet.levi45_iptv.tv';
-    document.body.appendChild(a);
-    a.click();
-    
-    setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }, 100);
-}
+'use strict';
+const $=id=>document.getElementById(id);let channels=[],page=0;const PAGE=100;
+function status(s){$('status').textContent=s}
+function safeName(s){return (s||'Levi45 IPTV').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').trim().slice(0,75)||'Levi45 IPTV'}
+function parseM3U(text){let result=[],meta=null,group='';for(const raw of text.replace(/^\uFEFF/,'').split(/\r\n|\r|\n/)){const line=raw.trim();if(!line)continue;if(/^#EXTINF\s*:/i.test(line)){let quote=false,comma=-1;for(let i=0;i<line.length;i++){if(line[i]==='"')quote=!quote;if(line[i]===','&&!quote){comma=i;break}}const attrs={};const head=comma>=0?line.slice(0,comma):line;for(const m of head.matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s]+))/g))attrs[m[1].toLowerCase()]=m[2]??m[3]??m[4];meta={name:comma>=0?line.slice(comma+1).trim():'',attrs};group=attrs['group-title']||'';continue}if(/^#EXTGRP\s*:/i.test(line)){group=line.split(':').slice(1).join(':').trim();continue}if(line.startsWith('#'))continue;if(!/^(https?|rtsp|rtmp|rtmps|udp|rtp|mms):\/\//i.test(line))continue;let attrs=meta?.attrs||{};let name=meta?.name||attrs['tvg-name']||`Channel ${result.length+1}`;result.push({id:result.length,name,group:attrs['group-title']||group||'Uncategorised',url:line,attrs:{...attrs},selected:true});meta=null;group=''}return result}
+function visible(){const q=$('search').value.trim().toLowerCase(),g=$('filter').value;return channels.filter(c=>(!g||c.group===g)&&(!q||c.name.toLowerCase().includes(q)||c.group.toLowerCase().includes(q)))}
+function refresh(){const groups=[...new Set(channels.map(c=>c.group))].sort((a,b)=>a.localeCompare(b));const old=$('filter').value;$('filter').replaceChildren(new Option('All groups',''),...groups.map(g=>new Option(g,g)));$('filter').value=groups.includes(old)?old:'';$('total').textContent=channels.length;$('selectedCount').textContent=channels.filter(c=>c.selected).length;$('groupCount').textContent=groups.length;$('download').disabled=!channels.some(c=>c.selected);render()}
+function render(){const data=visible(),pages=Math.ceil(data.length/PAGE);page=Math.max(0,Math.min(page,pages-1));const slice=data.slice(page*PAGE,(page+1)*PAGE);const body=$('rows');body.replaceChildren();if(!slice.length){let tr=body.insertRow(),td=tr.insertCell();td.colSpan=5;td.className='empty';td.textContent=channels.length?'No matching channels.':'Your channels will appear here after import.'}for(const c of slice){const tr=body.insertRow();let td=tr.insertCell(),box=document.createElement('input');box.type='checkbox';box.checked=c.selected;box.setAttribute('aria-label','Select '+c.name);box.addEventListener('change',()=>{c.selected=box.checked;updateCounts()});td.append(box);td=tr.insertCell();const nm=document.createElement('div');nm.className='chname';nm.textContent=c.name;nm.title=c.name;const sub=document.createElement('div');sub.className='sub';sub.textContent=c.attrs['tvg-id']||'';td.append(nm,sub);td=tr.insertCell();const badge=document.createElement('span');badge.className='badge';badge.textContent=c.group;td.append(badge);td=tr.insertCell();const protocol=document.createElement('span');protocol.className='stream';protocol.textContent=c.url.split(':')[0].toUpperCase();td.append(protocol);td=tr.insertCell();const edit=document.createElement('button');edit.className='ghost';edit.textContent='Edit';edit.addEventListener('click',()=>openEditor(c));td.append(edit)}const p=$('paging');p.replaceChildren();if(pages>1){const prev=document.createElement('button');prev.className='ghost';prev.textContent='← Previous';prev.disabled=page===0;prev.onclick=()=>{page--;render()};const label=document.createElement('span');label.textContent=`Page ${page+1} of ${pages} · ${data.length} channels`;const next=document.createElement('button');next.className='ghost';next.textContent='Next →';next.disabled=page>=pages-1;next.onclick=()=>{page++;render()};p.append(prev,label,next)}}
+function updateCounts(){$('selectedCount').textContent=channels.filter(c=>c.selected).length;$('download').disabled=!channels.some(c=>c.selected)}
+function load(){const raw=$('source').value;if(!raw.trim()){status('Please paste or choose a playlist first.');return}channels=parseM3U(raw);if($('dedupe').checked){const seen=new Set();channels=channels.filter(c=>{if(seen.has(c.url))return false;seen.add(c.url);return true})}if($('sort').checked)channels.sort((a,b)=>a.name.localeCompare(b.name));page=0;refresh();status(channels.length?`Loaded ${channels.length.toLocaleString()} channels successfully.`:'No supported stream URLs found. Check your playlist format.')}
+function encodeRef(url){return url.replace(/%/g,'%25').replace(/:/g,'%3a').replace(/\n|\r/g,'').replace(/#/g,'%23').replace(/\s/g,c=>encodeURIComponent(c))}
+function bouquetContent(items,name){const type=$('service').value;let lines=['#NAME '+name];for(const c of items){lines.push(`#SERVICE ${type}:0:1:0:0:0:0:0:0:0:${encodeRef(c.url)}:${c.name.replace(/[\r\n]/g,' ')}`);lines.push('#DESCRIPTION '+c.name.replace(/[\r\n]/g,' '))}return lines.join('\n')+'\n'}
+function attr(s){return String(s||'').replace(/["\r\n]/g,' ').trim()}
+function m3u(items,extended){return '#EXTM3U\n'+items.map(c=>{let tags='';if(extended){for(const k of ['tvg-id','tvg-name','tvg-logo'])if(c.attrs[k])tags+=` ${k}="${attr(c.attrs[k])}"`;tags+=` group-title="${attr(c.group)}"`}return `#EXTINF:-1${tags},${c.name.replace(/[\r\n]/g,' ')}\n${c.url}`}).join('\n')+'\n'}
+function save(data,name,type='text/plain;charset=utf-8'){const blob=data instanceof Blob?data:new Blob([data],{type});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+// ZIP writer (uncompressed STORE method), no external libraries or network dependencies.
+const enc=new TextEncoder();const crcTable=Array.from({length:256},(_,i)=>{let c=i;for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;return c>>>0});function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=crcTable[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0}
+function zip(files){const parts=[],central=[];let offset=0;const write=(view,pos,value,size)=>{if(size===2)view.setUint16(pos,value,true);else view.setUint32(pos,value,true)};for(const [name,content] of files){const n=enc.encode(name),b=enc.encode(content),crc=crc32(b),head=new Uint8Array(30+n.length),v=new DataView(head.buffer);write(v,0,0x04034b50,4);write(v,4,20,2);write(v,8,0,2);write(v,10,0,2);write(v,14,crc,4);write(v,18,b.length,4);write(v,22,b.length,4);write(v,26,n.length,2);head.set(n,30);parts.push(head,b);const dir=new Uint8Array(46+n.length),d=new DataView(dir.buffer);write(d,0,0x02014b50,4);write(d,4,20,2);write(d,6,20,2);write(d,16,crc,4);write(d,20,b.length,4);write(d,24,b.length,4);write(d,28,n.length,2);write(d,42,offset,4);dir.set(n,46);central.push(dir);offset+=head.length+b.length}const cdsize=central.reduce((a,b)=>a+b.length,0),end=new Uint8Array(22),e=new DataView(end.buffer);write(e,0,0x06054b50,4);write(e,8,files.length,2);write(e,10,files.length,2);write(e,12,cdsize,4);write(e,16,offset,4);return new Blob([...parts,...central,end],{type:'application/zip'})}
+function exportFiles(){let items=channels.filter(c=>c.selected);if(!items.length)return;const format=$('format').value,name=safeName($('bouquet').value);if(format==='enigma'){if($('groups').checked){const groups=new Map();for(const c of items){if(!groups.has(c.group))groups.set(c.group,[]);groups.get(c.group).push(c)}const files=[],names=[],used=new Set();for(const [group,list] of groups){let stem=safeName(group).toLowerCase().replace(/[^a-z0-9_-]/g,'_'),unique=stem,n=2;while(used.has(unique))unique=stem+'_'+n++;used.add(unique);const filename=`userbouquet.${unique}.tv`;files.push([filename,bouquetContent(list,group)]);names.push(`#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "${filename}" ORDER BY bouquet`)}files.push(['bouquets.tv.snippet.txt',names.join('\n')+'\n']);files.push(['README.txt','Upload userbouquet.*.tv files to /etc/enigma2/ and add the lines from bouquets.tv.snippet.txt to your existing bouquets.tv. Back up your configuration before editing. Restart the Enigma2 GUI.\n']);save(zip(files),name+'.zip','application/zip')}else save(bouquetContent(items,name),`userbouquet.${name.toLowerCase().replace(/[^a-z0-9_-]/g,'_')}.tv`)}else if(format==='urls')save(items.map(c=>c.url).join('\n')+'\n',name+'.txt');else save(m3u(items,format==='extended'),name+'.m3u');status(`Exported ${items.length.toLocaleString()} selected channels.`)}
+let editing=null;
+function openEditor(channel=null){editing=channel;const dlg=$('channelDialog');$('dialogTitle').textContent=channel?'Edit channel':'Add channel';$('editName').value=channel?.name||'';$('editGroup').value=channel?.group||'Uncategorised';$('editUrl').value=channel?.url||'';$('editTvgId').value=channel?.attrs['tvg-id']||'';$('editLogo').value=channel?.attrs['tvg-logo']||'';$('groupSuggestions').replaceChildren(...[...new Set(channels.map(c=>c.group))].map(g=>{const o=document.createElement('option');o.value=g;return o}));dlg.showModal();}
+$('channelForm').addEventListener('submit',e=>{if(e.submitter?.value!=='save')return;e.preventDefault();const name=$('editName').value.trim(),url=$('editUrl').value.trim(),group=$('editGroup').value.trim()||'Uncategorised';if(!name||!url||!/^(https?|rtsp|rtmp|rtmps|udp|rtp|mms):\/\//i.test(url)){status('Enter a channel name and a supported stream URL.');return}const attrs={...(editing?.attrs||{})};attrs['tvg-id']=$('editTvgId').value.trim();attrs['tvg-logo']=$('editLogo').value.trim();if(editing)Object.assign(editing,{name,url,group,attrs});else channels.push({id:Date.now()+Math.random(),name,url,group,attrs,selected:true});$('channelDialog').close();page=0;refresh();status('Channel saved.');});
+$('addChannel').onclick=()=>openEditor();
+$('addGroup').onclick=()=>{const group=prompt('New group name:');if(!group?.trim())return;openEditor();$('editGroup').value=group.trim();status('Add a channel to create this group.');};
+$('removeSelected').onclick=()=>{const n=channels.filter(c=>c.selected).length;if(!n||!confirm(`Remove ${n} selected channel(s) from the editor?`))return;channels=channels.filter(c=>!c.selected);page=0;refresh();status(`Removed ${n} channels.`)};
+function moveSelected(delta){if($('sort').checked){status('Turn off alphabetical sorting before reordering.');return}const chosen=channels.filter(c=>c.selected);if(chosen.length!==1){status('Select exactly one channel to move.');return}const i=channels.indexOf(chosen[0]),j=i+delta;if(j<0||j>=channels.length)return;[channels[i],channels[j]]=[channels[j],channels[i]];refresh();status('Channel moved.');}
+$('moveUp').onclick=()=>moveSelected(-1);$('moveDown').onclick=()=>moveSelected(1);
+$('drop').addEventListener('click',()=>$('file').click());$('drop').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click()}});for(const event of ['dragenter','dragover'])$('drop').addEventListener(event,e=>{e.preventDefault();$('drop').classList.add('drag')});for(const event of ['dragleave','drop'])$('drop').addEventListener(event,e=>{e.preventDefault();$('drop').classList.remove('drag')});$('drop').addEventListener('drop',e=>{if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0])});$('file').addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});async function readFile(file){if(file.size>100*1024*1024){status('File is larger than the 100 MB safety limit.');return}try{$('source').value=await file.text();load();status(`Imported ${file.name} · ${channels.length.toLocaleString()} channels.`)}catch(e){status('Could not read file: '+e.message)}}
+$('parse').onclick=load;$('reset').onclick=()=>{$('source').value='';$('file').value='';$('search').value='';channels=[];page=0;refresh();status('Ready to import your playlist.')};$('search').oninput=()=>{page=0;render()};$('filter').onchange=()=>{page=0;render()};$('all').onclick=()=>{visible().forEach(c=>c.selected=true);render();updateCounts()};$('none').onclick=()=>{visible().forEach(c=>c.selected=false);render();updateCounts()};$('dedupe').onchange=()=>{if($('source').value.trim())load()};$('sort').onchange=()=>{if($('source').value.trim())load()};$('format').onchange=()=>{$('enigmaOptions').hidden=$('format').value!=='enigma'};$('download').onclick=exportFiles;$('theme').onclick=()=>{document.body.classList.toggle('light');$('theme').textContent=document.body.classList.contains('light')?'☾ Theme':'☀ Theme'};refresh();
