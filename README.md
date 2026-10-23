@@ -15,3 +15,7 @@ Existing channel editing, drag sorting, autosave, project backup and restore rem
 
 ## v3.3.2 fix
 Initialises `restoring`, `saveTimer`, and `PROJECT_KEY` before autosave runs.
+
+
+## v3.4 additions
+Selected-channel Enigma2 preview (first 300 channels for responsiveness), copy preview, and separate full M3U and Enigma2 download buttons. Category grouping continues to use `group-title` metadata; channels without a category appear as Uncategorised. Preview edits are not used for downloads; use the channel editor to change channel data.

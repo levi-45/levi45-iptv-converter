@@ -9,3 +9,6 @@
 
 /* Classic two-box quick converter */
 .quick-converter{margin-top:24px}.quick-options{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.quick-options label{display:flex;align-items:center;gap:7px;padding:10px 12px;background:rgba(120,130,190,.09);border:1px solid rgba(150,160,210,.22);border-radius:9px;cursor:pointer}.quick-options input{accent-color:#7772f9}.quick-text{display:block;width:100%;min-height:220px;box-sizing:border-box;resize:vertical;font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}.quick-buttons{justify-content:center;flex-wrap:wrap;margin:16px 0 20px}.quick-buttons button{min-width:150px}
+
+/* v3.4 selected-channel preview */
+.output-preview{margin-top:20px;margin-bottom:20px}.output-preview .row{flex-wrap:wrap;gap:10px;margin-bottom:14px}.preview-text{display:block;width:100%;min-height:230px;box-sizing:border-box;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55}.output-preview .hint{margin-top:10px}
