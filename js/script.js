@@ -4,6 +4,7 @@ const $=id=>document.getElementById(id);let channels=[],page=0;const PAGE=100;
 const PROJECT_KEY='levi45-iptv-project-v3';
 let restoring=false;
 let saveTimer=null;
+// Preview timer must exist before restoreAutosave() calls refresh().
 let previewTimer=null;
 function status(s){$('status').textContent=s}
 function safeName(s){return (s||'Levi45 IPTV').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').trim().slice(0,75)||'Levi45 IPTV'}
